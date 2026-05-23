@@ -1,0 +1,26 @@
+[
+{
+  "directory": "/Users/nagasrigauri/projects/netscope-packet-analyzer/build",
+  "command": "/usr/bin/c++  -I/Users/nagasrigauri/projects/netscope-packet-analyzer/include -O3 -DNDEBUG -std=gnu++23 -arch arm64 -Wall -Wextra -Wpedantic -Werror -fstack-protector-strong -D_FORTIFY_SOURCE=2 -o CMakeFiles/netscope_lib.dir/src/parser.cpp.o -c /Users/nagasrigauri/projects/netscope-packet-analyzer/src/parser.cpp",
+  "file": "/Users/nagasrigauri/projects/netscope-packet-analyzer/src/parser.cpp",
+  "output": "CMakeFiles/netscope_lib.dir/src/parser.cpp.o"
+},
+{
+  "directory": "/Users/nagasrigauri/projects/netscope-packet-analyzer/build",
+  "command": "/usr/bin/c++  -I/Users/nagasrigauri/projects/netscope-packet-analyzer/include -O3 -DNDEBUG -std=gnu++23 -arch arm64 -Wall -Wextra -Wpedantic -Werror -fstack-protector-strong -D_FORTIFY_SOURCE=2 -o CMakeFiles/netscope_lib.dir/src/analyzer.cpp.o -c /Users/nagasrigauri/projects/netscope-packet-analyzer/src/analyzer.cpp",
+  "file": "/Users/nagasrigauri/projects/netscope-packet-analyzer/src/analyzer.cpp",
+  "output": "CMakeFiles/netscope_lib.dir/src/analyzer.cpp.o"
+},
+{
+  "directory": "/Users/nagasrigauri/projects/netscope-packet-analyzer/build",
+  "command": "/usr/bin/c++  -I/Users/nagasrigauri/projects/netscope-packet-analyzer/include -O3 -DNDEBUG -std=gnu++23 -arch arm64 -Wall -Wextra -Wpedantic -Werror -fstack-protector-strong -D_FORTIFY_SOURCE=2 -o CMakeFiles/test_parser.dir/tests/test_parser.cpp.o -c /Users/nagasrigauri/projects/netscope-packet-analyzer/tests/test_parser.cpp",
+  "file": "/Users/nagasrigauri/projects/netscope-packet-analyzer/tests/test_parser.cpp",
+  "output": "CMakeFiles/test_parser.dir/tests/test_parser.cpp.o"
+},
+{
+  "directory": "/Users/nagasrigauri/projects/netscope-packet-analyzer/build",
+  "command": "/usr/bin/c++  -I/Users/nagasrigauri/projects/netscope-packet-analyzer/include -O3 -DNDEBUG -std=gnu++23 -arch arm64 -Wall -Wextra -Wpedantic -Werror -fstack-protector-strong -D_FORTIFY_SOURCE=2 -o CMakeFiles/test_analyzer.dir/tests/test_analyzer.cpp.o -c /Users/nagasrigauri/projects/netscope-packet-analyzer/tests/test_analyzer.cpp",
+  "file": "/Users/nagasrigauri/projects/netscope-packet-analyzer/tests/test_analyzer.cpp",
+  "output": "CMakeFiles/test_analyzer.dir/tests/test_analyzer.cpp.o"
+}
+]

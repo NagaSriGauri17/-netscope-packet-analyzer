@@ -1,0 +1,7 @@
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/netscope_lib.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/netscope_server.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/test_parser.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/test_analyzer.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/test.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/edit_cache.dir
+/Users/nagasrigauri/projects/netscope-packet-analyzer/build/CMakeFiles/rebuild_cache.dir

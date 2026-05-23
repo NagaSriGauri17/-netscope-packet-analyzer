@@ -1,0 +1,2 @@
+/usr/bin/ar qc libnetscope_lib.a CMakeFiles/netscope_lib.dir/src/parser.cpp.o CMakeFiles/netscope_lib.dir/src/analyzer.cpp.o
+/usr/bin/ranlib libnetscope_lib.a

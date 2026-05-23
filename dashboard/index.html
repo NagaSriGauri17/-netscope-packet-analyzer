@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NetScope — Live Packet Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c10;--bg2:#0d1117;--bg3:#111820;
+  --border:rgba(0,200,255,0.10);--border2:rgba(0,200,255,0.22);
+  --cyan:#00c8ff;--green:#00e396;--amber:#ffb800;--red:#ff4560;--purple:#9b59ff;
+  --text:#c9d8e8;--text2:#5a7a96;
+  --mono:'JetBrains Mono',monospace;--disp:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;
+  border-bottom:1px solid var(--border);background:rgba(8,12,16,0.92);
+  backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:36px;height:36px;border-radius:8px;border:1px solid var(--cyan);
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(0,200,255,0.22)}
+.logo-name{font-family:var(--disp);font-size:19px;font-weight:800;color:#fff}
+.logo-name span{color:var(--cyan)}
+.logo-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.badge{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-live{border:1px solid rgba(0,227,150,0.3);background:rgba(0,227,150,0.06);color:var(--green)}
+.badge-conn{border:1px solid var(--border2)}
+.badge-conn.on{color:var(--green);border-color:rgba(0,227,150,0.3)}
+.badge-conn.off{color:var(--red);border-color:rgba(255,69,96,0.3)}
+.badge-conn.wait{color:var(--amber);border-color:rgba(255,184,0,0.3)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+/* MAIN */
+.main{padding:20px 28px;display:flex;flex-direction:column;gap:16px}
+.demo-banner{background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.25);
+  border-radius:8px;padding:10px 16px;font-size:11px;color:var(--amber);
+  display:flex;align-items:center;gap:8px}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;transition:border-color .3s}
+.metric:hover{border-color:var(--border2)}
+.m-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.m-val{font-family:var(--disp);font-size:26px;font-weight:700;line-height:1}
+.m-val.c{color:var(--cyan)}.m-val.g{color:var(--green)}.m-val.a{color:var(--amber)}.m-val.r{color:var(--red)}
+.m-sub{font-size:10px;color:var(--text2);margin-top:6px}
+
+/* ── NEW: FILTER BUTTONS ── */
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-label{font-size:11px;color:var(--text2);margin-right:4px}
+.fbtn{
+  font-family:var(--mono);font-size:11px;font-weight:700;
+  padding:5px 12px;border-radius:20px;cursor:pointer;
+  border:1px solid;transition:all .2s;letter-spacing:.04em;
+  background:transparent;
+}
+.fbtn-all   {color:var(--text2);border-color:rgba(255,255,255,0.15)}
+.fbtn-tcp   {color:var(--cyan);  border-color:rgba(0,200,255,0.3)}
+.fbtn-udp   {color:var(--green); border-color:rgba(0,227,150,0.3)}
+.fbtn-dns   {color:var(--purple);border-color:rgba(155,89,255,0.3)}
+.fbtn-http  {color:var(--amber); border-color:rgba(255,184,0,0.3)}
+.fbtn-icmp  {color:var(--red);   border-color:rgba(255,69,96,0.3)}
+.fbtn.active{
+  background:rgba(255,255,255,0.07);
+  box-shadow:0 0 10px rgba(0,200,255,0.15);
+}
+.fbtn-all.active  {background:rgba(255,255,255,0.08);color:#fff;border-color:rgba(255,255,255,0.3)}
+.fbtn-tcp.active  {background:rgba(0,200,255,0.12)}
+.fbtn-udp.active  {background:rgba(0,227,150,0.12)}
+.fbtn-dns.active  {background:rgba(155,89,255,0.12)}
+.fbtn-http.active {background:rgba(255,184,0,0.12)}
+.fbtn-icmp.active {background:rgba(255,69,96,0.12)}
+.filter-count{font-size:10px;color:var(--text2);margin-left:auto}
+
+/* ROW 2 */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.panel-title{font-family:var(--disp);font-size:12px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.06em}
+.panel-tag{font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(0,200,255,.07);color:var(--cyan);border:1px solid rgba(0,200,255,.2)}
+
+/* PROTO BARS */
+.proto-item{margin-bottom:11px}
+.proto-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.proto-name{color:#fff;font-weight:500}.proto-cnt{color:var(--text2)}
+.bar-bg{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bTCP{background:var(--cyan)}.bUDP{background:var(--green)}
+.bDNS{background:var(--purple)}.bHTTP{background:var(--amber)}.bICMP{background:var(--red)}
+
+/* ── NEW: PPS GRAPH ── */
+.graph-section{margin-top:14px}
+.graph-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.graph-title{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.graph-val{font-size:11px;color:var(--cyan);font-weight:700}
+.graph-reset{font-size:10px;color:var(--text2);cursor:pointer;padding:2px 8px;
+  border:1px solid rgba(255,255,255,0.1);border-radius:4px;background:transparent;
+  transition:all .2s}
+.graph-reset:hover{color:#fff;border-color:rgba(255,255,255,0.3)}
+canvas{display:block;width:100%}
+
+/* STREAM TABLE */
+.stbl{width:100%;border-collapse:collapse;font-size:11px}
+.stbl th{color:var(--text2);font-weight:500;text-align:left;
+  padding:0 8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid var(--border)}
+.stbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.03)}
+.stbl tr:hover td{background:rgba(0,200,255,.03)}
+.stbl tr.new td{animation:rowglow .5s ease}
+@keyframes rowglow{from{background:rgba(0,200,255,.09)}to{background:transparent}}
+.empty-row td{text-align:center;color:var(--text2);font-size:11px;padding:20px}
+
+.ptag{display:inline-block;padding:2px 7px;border-radius:3px;
+  font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid}
+.ptag-TCP   {color:var(--cyan);  background:rgba(0,200,255,.08);border-color:rgba(0,200,255,.2)}
+.ptag-UDP   {color:var(--green); background:rgba(0,227,150,.08);border-color:rgba(0,227,150,.2)}
+.ptag-DNS   {color:var(--purple);background:rgba(155,89,255,.08);border-color:rgba(155,89,255,.2)}
+.ptag-ICMP  {color:var(--red);   background:rgba(255,69,96,.08);border-color:rgba(255,69,96,.2)}
+.ptag-HTTP  {color:var(--amber); background:rgba(255,184,0,.08);border-color:rgba(255,184,0,.2)}
+.ptag-HTTPS {color:var(--amber); background:rgba(255,184,0,.08);border-color:rgba(255,184,0,.2)}
+.ptag-UNKNOWN{color:var(--text2);background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+.fsyn{color:var(--cyan)}.fack{color:var(--green)}.ffin{color:var(--amber)}.frst{color:var(--red)}
+
+/* ANOMALY */
+.anom-list{display:flex;flex-direction:column;gap:10px}
+.anom-card{display:flex;gap:12px;padding:12px 14px;border-radius:8px;border:1px solid;animation:slidein .4s ease}
+@keyframes slidein{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.anom-card.warn{background:rgba(255,184,0,.04);border-color:rgba(255,184,0,.2)}
+.anom-card.crit{background:rgba(255,69,96,.04);border-color:rgba(255,69,96,.2)}
+.anom-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.anom-title{font-size:12px;font-weight:700;color:#fff;margin-bottom:3px}
+.anom-desc{font-size:11px;color:var(--text2);line-height:1.5}
+.conf-row{font-size:10px;margin-top:5px;display:flex;align-items:center;gap:6px;color:var(--text2)}
+.conf-bar{width:60px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;background:var(--cyan);border-radius:2px}
+.no-anom{text-align:center;padding:26px;color:var(--text2);font-size:12px;
+  border:1px dashed var(--border);border-radius:8px}
+
+/* LOG BADGE */
+.log-badge{font-size:10px;padding:3px 8px;border-radius:4px;
+  background:rgba(0,227,150,.07);color:var(--green);border:1px solid rgba(0,227,150,.2);
+  margin-left:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="4"  cy="10" r="2.2" fill="#00c8ff"/>
+        <circle cx="16" cy="10" r="2.2" fill="#00c8ff"/>
+        <circle cx="10" cy="4"  r="2.2" fill="#00c8ff"/>
+        <circle cx="10" cy="16" r="2.2" fill="#00c8ff"/>
+        <line x1="6.2" y1="10" x2="13.8" y2="10"  stroke="#00c8ff" stroke-width="1.2"/>
+        <line x1="10"  y1="6.2" x2="10"  y2="13.8" stroke="#00c8ff" stroke-width="1.2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">Net<span>Scope</span></div>
+      <div class="logo-sub">Optical Network Packet Analyzer · eth0 · 10GbE</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="badge badge-conn wait" id="connBadge">Connecting...</span>
+    <span class="badge badge-live"><span class="dot"></span>Live</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="demo-banner" id="demoBanner" style="display:none">
+    ⚡ <strong>Demo mode</strong> — run <code>./build/netscope_server</code> to stream real packets.
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric"><div class="m-label">Packets / sec</div><div class="m-val c" id="mPps">—</div><div class="m-sub">current rate</div></div>
+    <div class="metric"><div class="m-label">Throughput</div><div class="m-val g" id="mTput">—</div><div class="m-sub">Mbps</div></div>
+    <div class="metric"><div class="m-label">Total packets</div><div class="m-val a" id="mTotal">—</div><div class="m-sub">since capture start</div></div>
+    <div class="metric"><div class="m-label">Anomalies</div><div class="m-val r" id="mAnom">0</div><div class="m-sub">AI detected</div></div>
+  </div>
+
+  <!-- ── NEW: Filter bar ── -->
+  <div class="panel" style="padding:14px 18px">
+    <div class="filter-bar">
+      <span class="filter-label">Filter stream:</span>
+      <button class="fbtn fbtn-all active"  onclick="setFilter('ALL')" >ALL</button>
+      <button class="fbtn fbtn-tcp"  onclick="setFilter('TCP')" >TCP</button>
+      <button class="fbtn fbtn-udp"  onclick="setFilter('UDP')" >UDP</button>
+      <button class="fbtn fbtn-dns"  onclick="setFilter('DNS')" >DNS</button>
+      <button class="fbtn fbtn-http" onclick="setFilter('HTTP')">HTTP/S</button>
+      <button class="fbtn fbtn-icmp" onclick="setFilter('ICMP')">ICMP</button>
+      <span class="filter-count" id="filterCount">showing all packets</span>
+    </div>
+  </div>
+
+  <div class="row2">
+    <!-- Left: protocol distribution + PPS graph -->
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Protocol Distribution</div><span class="panel-tag">Live</span></div>
+
+      <div class="proto-item"><div class="proto-row"><span class="proto-name">TCP</span><span class="proto-cnt" id="cTCP">0</span></div><div class="bar-bg"><div class="bar-fill bTCP" id="bTCP" style="width:0"></div></div></div>
+      <div class="proto-item"><div class="proto-row"><span class="proto-name">UDP</span><span class="proto-cnt" id="cUDP">0</span></div><div class="bar-bg"><div class="bar-fill bUDP" id="bUDP" style="width:0"></div></div></div>
+      <div class="proto-item"><div class="proto-row"><span class="proto-name">DNS</span><span class="proto-cnt" id="cDNS">0</span></div><div class="bar-bg"><div class="bar-fill bDNS" id="bDNS" style="width:0"></div></div></div>
+      <div class="proto-item"><div class="proto-row"><span class="proto-name">HTTP/S</span><span class="proto-cnt" id="cHTTP">0</span></div><div class="bar-bg"><div class="bar-fill bHTTP" id="bHTTP" style="width:0"></div></div></div>
+      <div class="proto-item"><div class="proto-row"><span class="proto-name">ICMP</span><span class="proto-cnt" id="cICMP">0</span></div><div class="bar-bg"><div class="bar-fill bICMP" id="bICMP" style="width:0"></div></div></div>
+
+      <!-- ── NEW: Packets-per-second graph ── -->
+      <div class="graph-section">
+        <div class="graph-head">
+          <span class="graph-title">Packets / second</span>
+          <span class="graph-val" id="ppsLive">0 pps</span>
+          <button class="graph-reset" onclick="resetPpsGraph()">Reset</button>
+        </div>
+        <canvas id="ppsCanvas" height="70"></canvas>
+      </div>
+    </div>
+
+    <!-- Right: live packet stream (filtered) -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Live Packet Stream</div>
+        <span class="panel-tag" id="streamTag">0 pkts</span>
+      </div>
+      <table class="stbl">
+        <thead><tr><th>Src IP</th><th>Dst IP</th><th>Proto</th><th>Len</th><th>Flags</th></tr></thead>
+        <tbody id="streamBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Anomaly panel -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        AI Anomaly Detection
+        <span class="log-badge" id="logBadge" style="display:none">● saving to anomalies.log</span>
+      </div>
+      <span class="panel-tag">Heuristic ML</span>
+    </div>
+    <div id="anomalyArea"><div class="no-anom">No anomalies detected — traffic looks normal ✓</div></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let packets=[], anomalies=[], ppsData=Array(50).fill(0);
+let totalPkts=0, protoCounts={TCP:0,UDP:0,DNS:0,HTTP:0,ICMP:0};
+let currentFilter='ALL';
+let ws=null, demoMode=false, demoTimer=null;
+
+// ── WebSocket ──────────────────────────────────────────────────────
+function connect(){
+  setConn('wait');
+  try{
+    ws=new WebSocket('ws://localhost:9001');
+    ws.onopen=()=>{
+      setConn('on');
+      document.getElementById('demoBanner').style.display='none';
+      document.getElementById('logBadge').style.display='inline';
+      clearInterval(demoTimer); demoMode=false;
+    };
+    ws.onmessage=e=>{ try{ dispatch(JSON.parse(e.data)); }catch(_){} };
+    ws.onclose=()=>{ setConn('off'); startDemo(); setTimeout(connect,4000); };
+    ws.onerror=()=>{ setConn('off'); startDemo(); };
+  }catch(e){ startDemo(); }
+}
+
+function setConn(s){
+  const el=document.getElementById('connBadge');
+  el.className='badge badge-conn '+s;
+  el.textContent=s==='on'?'● C++ Server':s==='wait'?'Connecting…':'○ Demo Mode';
+}
+
+function dispatch(msg){
+  if(msg.type==='packet')  onPacket(msg);
+  if(msg.type==='stats')   onStats(msg);
+  if(msg.type==='anomaly') onAnomaly(msg);
+}
+
+// ── Demo mode ──────────────────────────────────────────────────────
+const PROTOS=['TCP','TCP','TCP','UDP','DNS','ICMP','HTTP','HTTPS'];
+const FLAGS=['SYN','ACK','FIN','RST','SYN+ACK','PSH+ACK'];
+const IPS=['192.168.1','10.0.0','172.16.0','203.0.113'];
+const PORTS=[80,443,53,22,8080,3306];
+const rnd=arr=>arr[Math.random()*arr.length|0];
+const randIp=()=>rnd(IPS)+'.'+(Math.random()*253+1|0);
+
+function startDemo(){
+  if(demoMode)return; demoMode=true;
+  document.getElementById('demoBanner').style.display='flex';
+  demoTimer=setInterval(()=>{
+    for(let i=0;i<5;i++){
+      const p=rnd(PROTOS);
+      onPacket({src_ip:randIp(),dst_ip:randIp(),src_port:rnd(PORTS),dst_port:rnd(PORTS),
+                protocol:p,flags:p==='TCP'?rnd(FLAGS):'—',length:Math.random()*1400+60|0});
+    }
+    const p=600+Math.random()*600|0;
+    onStats({pps:p,throughput_mbps:(300+Math.random()*500).toFixed(0),total:totalPkts});
+    if(Math.random()<0.006) onAnomaly({
+      severity:Math.random()<.5?'WARNING':'CRITICAL',
+      description:Math.random()<.5
+        ?'Port scan: '+(20+Math.random()*30|0)+' SYN targets in 3s'
+        :'DNS amplification: '+(2100+Math.random()*2000|0)+'B response',
+      src_ip:randIp(), confidence:(0.8+Math.random()*.18).toFixed(2)
+    });
+  },250);
+}
+
+// ── Handlers ──────────────────────────────────────────────────────
+function onPacket(p){
+  packets.push(p); totalPkts++;
+  if(packets.length>500) packets.shift();
+  const k=p.protocol==='HTTPS'?'HTTP':p.protocol;
+  if(k in protoCounts) protoCounts[k]++;
+  renderStream();
+  updateBars();
+  document.getElementById('streamTag').textContent=totalPkts.toLocaleString()+' pkts';
+}
+
+function onStats(s){
+  const pps=+s.pps||0;
+  document.getElementById('mPps').textContent   = pps.toLocaleString();
+  document.getElementById('mTput').textContent  = s.throughput_mbps+' Mbps';
+  document.getElementById('mTotal').textContent = (+s.total||totalPkts).toLocaleString();
+  document.getElementById('ppsLive').textContent = pps.toLocaleString()+' pps';
+  // push to PPS graph
+  ppsData.push(pps); ppsData.shift();
+  drawPpsGraph();
+}
+
+function onAnomaly(a){
+  anomalies.unshift(a); if(anomalies.length>8) anomalies.pop();
+  document.getElementById('mAnom').textContent=anomalies.length;
+  renderAnomalies();
+}
+
+// ── NEW: Filter logic ──────────────────────────────────────────────
+function setFilter(proto){
+  currentFilter=proto;
+  // update button active states
+  document.querySelectorAll('.fbtn').forEach(b=>{
+    b.classList.remove('active');
+    if(b.textContent.trim()===(proto==='ALL'?'ALL':proto==='HTTP'?'HTTP/S':proto))
+      b.classList.add('active');
+    // special: ALL button
+    if(proto==='ALL' && b.classList.contains('fbtn-all')) b.classList.add('active');
+  });
+  renderStream();
+}
+
+function getFiltered(){
+  if(currentFilter==='ALL') return packets;
+  return packets.filter(p=>{
+    if(currentFilter==='HTTP') return p.protocol==='HTTP'||p.protocol==='HTTPS';
+    return p.protocol===currentFilter;
+  });
+}
+
+// ── Render: stream table ───────────────────────────────────────────
+function flagCls(f){
+  if(!f||f==='—') return '';
+  if(f.includes('SYN')&&!f.includes('ACK')) return 'fsyn';
+  if(f.includes('ACK')) return 'fack';
+  if(f.includes('FIN')) return 'ffin';
+  if(f.includes('RST')) return 'frst';
+  return '';
+}
+
+function renderStream(){
+  const filtered=getFiltered();
+  const shown=filtered.slice(-12).reverse();
+
+  // Update filter count label
+  const lbl=currentFilter==='ALL'
+    ?'showing all packets'
+    :`showing ${filtered.length.toLocaleString()} ${currentFilter} packets`;
+  document.getElementById('filterCount').textContent=lbl;
+
+  if(shown.length===0){
+    document.getElementById('streamBody').innerHTML=
+      '<tr class="empty-row"><td colspan="5">No '+currentFilter+' packets yet</td></tr>';
+    return;
+  }
+
+  document.getElementById('streamBody').innerHTML=shown.map((p,i)=>`
+    <tr class="${i===0?'new':''}">
+      <td>${p.src_ip}</td><td>${p.dst_ip}</td>
+      <td><span class="ptag ptag-${p.protocol}">${p.protocol}</span></td>
+      <td>${p.length}</td>
+      <td><span class="${flagCls(p.flags)}">${p.flags||'—'}</span></td>
+    </tr>`).join('');
+}
+
+// ── Render: protocol bars ──────────────────────────────────────────
+function updateBars(){
+  const tot=Object.values(protoCounts).reduce((a,b)=>a+b,0)||1;
+  for(const k of ['TCP','UDP','DNS','HTTP','ICMP']){
+    const v=protoCounts[k]||0;
+    document.getElementById('c'+k).textContent=v.toLocaleString();
+    document.getElementById('b'+k).style.width=Math.round(v/tot*100)+'%';
+  }
+}
+
+// ── Render: anomalies ──────────────────────────────────────────────
+function renderAnomalies(){
+  const area=document.getElementById('anomalyArea');
+  if(!anomalies.length){
+    area.innerHTML='<div class="no-anom">No anomalies detected — traffic looks normal ✓</div>';
+    return;
+  }
+  area.innerHTML='<div class="anom-list">'+anomalies.map(a=>{
+    const cls=a.severity==='CRITICAL'?'crit':'warn';
+    const icon=cls==='crit'?'🔴':'🟡';
+    const conf=Math.round((+a.confidence||.9)*100);
+    return `<div class="anom-card ${cls}">
+      <div class="anom-icon">${icon}</div>
+      <div>
+        <div class="anom-title">${a.severity} — ${a.src_ip}</div>
+        <div class="anom-desc">${a.description}</div>
+        <div class="conf-row">
+          <div class="conf-bar"><div class="conf-fill" style="width:${conf}%"></div></div>
+          Confidence: ${conf}% · saved to anomalies.log
+        </div>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// ── NEW: Packets-per-second canvas graph ───────────────────────────
+function resetPpsGraph(){
+  ppsData=Array(50).fill(0);
+  document.getElementById('ppsLive').textContent='0 pps';
+  drawPpsGraph();
+}
+
+function drawPpsGraph(){
+  const canvas=document.getElementById('ppsCanvas');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.offsetWidth, H=70;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+
+  const max=Math.max(...ppsData,1);
+  const pts=ppsData.map((v,i)=>[
+    i/(ppsData.length-1)*W,
+    H-(v/max)*(H-10)-5
+  ]);
+
+  // gradient fill under the line
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(0,200,255,0.20)');
+  grad.addColorStop(1,'rgba(0,200,255,0.00)');
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0],H);
+  pts.forEach(([x,y])=>ctx.lineTo(x,y));
+  ctx.lineTo(pts[pts.length-1][0],H);
+  ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+
+  // the line itself
+  ctx.beginPath();
+  pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+  ctx.strokeStyle='#00c8ff'; ctx.lineWidth=1.5; ctx.stroke();
+
+  // y-axis label: max value
+  ctx.fillStyle='rgba(90,122,150,0.8)';
+  ctx.font=`${9*dpr}px JetBrains Mono, monospace`;
+  ctx.scale(1/dpr,1/dpr);
+  ctx.fillText(max+' pps', 4*dpr, 14*dpr);
+}
+
+window.addEventListener('resize',drawPpsGraph);
+drawPpsGraph();
+connect();
+</script>
+</body>
+</html>

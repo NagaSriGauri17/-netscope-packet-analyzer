@@ -1,0 +1,49 @@
+Start testing: May 20 02:41 IST
+----------------------------------------------------------
+1/2 Testing: ParserTests
+1/2 Test: ParserTests
+Command: "/Users/nagasrigauri/projects/netscope-packet-analyzer/build/test_parser"
+Directory: /Users/nagasrigauri/projects/netscope-packet-analyzer/build
+"ParserTests" start time: May 20 02:41 IST
+Output:
+----------------------------------------------------------
+Running PacketParser tests...
+
+[PASS] test_syn_packet
+[PASS] test_https_ack
+[PASS] test_malformed_short_frame
+[PASS] test_fin_rst_flags
+
+All 4 tests passed.
+<end of output>
+Test time =   0.45 sec
+----------------------------------------------------------
+Test Passed.
+"ParserTests" end time: May 20 02:41 IST
+"ParserTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: AnalyzerTests
+2/2 Test: AnalyzerTests
+Command: "/Users/nagasrigauri/projects/netscope-packet-analyzer/build/test_analyzer"
+Directory: /Users/nagasrigauri/projects/netscope-packet-analyzer/build
+"AnalyzerTests" start time: May 20 02:41 IST
+Output:
+----------------------------------------------------------
+Running TrafficAnalyzer tests...
+
+[PASS] test_flow_stats
+[PASS] test_port_scan_detection
+[PASS] test_thread_safety
+[PASS] test_reset
+
+All 4 tests passed.
+<end of output>
+Test time =   0.52 sec
+----------------------------------------------------------
+Test Passed.
+"AnalyzerTests" end time: May 20 02:41 IST
+"AnalyzerTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: May 20 02:41 IST
