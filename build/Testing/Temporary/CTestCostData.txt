@@ -1,3 +1,0 @@
-ParserTests 1 0.454114
-AnalyzerTests 1 0.515588
----
